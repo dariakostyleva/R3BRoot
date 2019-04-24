@@ -108,6 +108,7 @@ class R3BTra : public R3BDetector
     Double32_t fLength_out;         //!  length when exiting active volume
     Double32_t fLength;             //!  length
     Double32_t fELoss;              //!  energy loss
+    Int_t fPdi;
     Int_t fPosIndex;                //!
     TClonesArray* fTraCollection;   //!  The hit collection
     Bool_t kGeoSaved;               //!
@@ -126,7 +127,7 @@ class R3BTra : public R3BDetector
                         TVector3 momOut,
                         Double_t time,
                         Double_t length,
-                        Double_t eLoss, Int_t pdgcode);
+                        Double_t eLoss, Int_t pdfcode);
 
     /** Private method ResetParameters
      **
@@ -147,6 +148,7 @@ inline void R3BTra::ResetParameters()
     fMomOut.SetXYZM(0.0, 0.0, 0.0, 0.0);
     fTime = fLength = fELoss = 0;
     fPosIndex = 0;
+    fPdi=0;
 };
 
 #endif

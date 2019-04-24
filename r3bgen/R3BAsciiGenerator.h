@@ -86,6 +86,8 @@ class R3BAsciiGenerator : public FairGenerator
    ** any ion needed. **/
   Int_t RegisterIons();
 
+  Double_t Pcm(Double_t e, Double_t p1, Double_t p2);
+
 
 
   /** STL map from ion name to FairIon **/

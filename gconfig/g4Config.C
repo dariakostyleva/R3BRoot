@@ -35,7 +35,10 @@ void Config()
     TString physicsList = gSystem->Getenv("PHYSICSLIST");
     if (physicsList == "")
     {
-        physicsList = "QGSP_INCLXX_HP";
+       // physicsList = "QGSP_INCLXX_HP+radDecay";
+       // physicsList = "QGSP_INCLXX_HP"; is ok
+        physicsList = "QGSP_INCLXX"; 
+       // physicsList = "FTFP_INCLXX";
     }
 
     auto runConfiguration =
