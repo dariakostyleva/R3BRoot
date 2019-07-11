@@ -124,15 +124,16 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   //******* Defining masses, mother energy, tlife **********
   
   Double_t AMS29=29.*0.93149406-0.003156; //mass of 29sulphur
-  Double_t QDECAY2 = 0.00185;
+  Double_t QDECAY2 = 0.002;
   Double_t AMASS1 = 0.938272297; //mass of proton
   iMass = AMS29 + AMASS1 + QDECAY2; //mass of 30 chlorine
   Double_t Ekin_30Cl = 0.618*30; //kin energy of chlorine
+  //Double_t Ekin_30Cl = 0.002;
   Double_t tlife = 6.58e-19; //tlife of 30Cl in sec
   Double_t iMass1 = iMass + 3.291086E-25/tlife*std::tan(TMath::Pi());
   Double_t Pmom_30Cl = sqrt(Ekin_30Cl*(Ekin_30Cl+2.*iMass1));
   Double_t qvalue_out = 0.; // to check the reproduction of the q-value
-  Double_t Phi = 0.0, Pp = 0.0;         // to check the reproduction of the q-value
+  Double_t P_hi = 0.0, Pp = 0.0;         // to check the reproduction of the q-value
 
   //***************************************************************
   //Double_t P_30Cl[3];
@@ -150,7 +151,8 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   daughtermass[0] = AMS29;
   daughtermass[1] = AMASS1;
   daughtermomentum = Pcm(iMass1,daughtermass[0],daughtermass[1]); 
-  //printf("daughtermomentum = %f\n", daughtermomentum);
+  cout << "Etot_30Cl = " << Etot_30Cl << endl;
+  printf("daughtermomentum = %f\n", daughtermomentum);
   //energies in c.m.s of decay products
   Etot_29S= sqrt(daughtermass[0]*daughtermass[0] + daughtermomentum*daughtermomentum);
   Etot_p= sqrt(daughtermass[1]*daughtermass[1] + daughtermomentum*daughtermomentum); 
@@ -162,8 +164,9 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   cout << "Etot_p_fort = " << Etot_p_fort <<endl;
   cout << "Etot_p = " << Etot_p <<endl;
   cout << "Etot_29S_fort = " << Etot_29S_fort <<endl;
-  cout << "Etot_29S = " << Etot_29S <<endl;
   */
+  cout << "Etot_29S in cm before Lorentz = " << Etot_29S <<endl;
+  
   //at this point we have decay products in the rest frame of mother
   //****************************************************************
 
@@ -174,6 +177,9 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t gamma, beta;
   gamma = Etot_30Cl/iMass1;
   beta = - Pmom_30Cl/Etot_30Cl;
+
+ // cout << "beta = " << beta << endl;
+ // cout << "gamma = "<< gamma << endl;
   
   //transformation of pcm from spherical coordinates to cartesian (three components)
   Double_t Pcm_daughter[3];
@@ -183,22 +189,41 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
 
   Double_t Plab_29S[3];
   Double_t Plab_p[3];
+  Double_t Elab_29S;
 
   for (Int_t i=0; i<2; i++) {
     Plab_29S[i] = Pcm_daughter[i];
     Plab_p[i] = (-1)*Pcm_daughter[i];
   }
+  cout << "Pcm_daughter[2] " << Pcm_daughter[2] << endl;
   
   //now Lorentz boost on z
   Plab_29S[2] = Pcm_daughter[2] + gamma*beta*((gamma*beta*Pcm_daughter[2])/(gamma+1) - Etot_29S);
   Plab_p[2] = (-1)*Pcm_daughter[2] + gamma*beta*((gamma*beta*(-1)*Pcm_daughter[2])/(gamma+1) - Etot_p);
 
+  Elab_29S = gamma*(Etot_29S - beta*Pcm_daughter[2]);
+  cout << "Elab_29S in lab after Lorentz = " << Elab_29S <<endl;
+
+
   //********************* check qvalue**********************************************
   Pp = sqrt(Plab_p[2]*Plab_p[2] + Plab_p[1]*Plab_p[1] + Plab_p[0]*Plab_p[0]);
-  Phi = sqrt(Plab_29S[2]*Plab_29S[2] + Plab_29S[1]*Plab_29S[1] + Plab_29S[0]*Plab_29S[0]);
-  qvalue_out = sqrt(Pp*Pp+AMASS1*AMASS1) + sqrt(Phi*Phi + AMS29*AMS29) - sqrt(Pmom_30Cl*Pmom_30Cl + iMass1*iMass1) - (AMASS1 + AMS29 - iMass1);
- // printf("T kin of S before detectors %f\n", sqrt(Phi*Phi + AMS29*AMS29) - AMS29);
+  P_hi = sqrt(Plab_29S[2]*Plab_29S[2] + Plab_29S[1]*Plab_29S[1] + Plab_29S[0]*Plab_29S[0]);
+  //this gives exacltly the decay energy
+  qvalue_out = sqrt(Pp*Pp+AMASS1*AMASS1) + sqrt(P_hi*P_hi + AMS29*AMS29) - sqrt(Pmom_30Cl*Pmom_30Cl + iMass1*iMass1) - (AMASS1 + AMS29 - iMass1);
+
+
+    //some stupid calculations 
+   //    pcm =  Phi + g*b*((g*b*Phi)/(g+1) + e_hi_lab); //here I calculate pcm from plab
+  //qvalue_out = 4*iMass1*iMass1*daughtermomentum*daughtermomentum/((iMass1 + AMASS1 - AMS29)*(iMass1 - AMASS1 + AMS29)*(iMass1 + AMASS1 + AMS29));
+  printf("Qvalue from pcm from plab and masses = %f\n",qvalue_out);
+ 
+
+ // printf("T kin of S before detectors %f\n", sqrt(P_hi*P_hi + AMS29*AMS29) - AMS29);
  // printf("Qvalue from print = %f\n",qvalue_out);
+
+  //qvalue_out = 4*iMass1*Pcm_daughter[2]*Pcm_daughter[2]/((iMass1+AMASS1-AMS29)*(iMass1-AMASS1-AMS29)*(iMass1+AMASS1+AMS29));
+ // printf("Qvalue from pcm and masses = %f\n",qvalue_out);
+
   //********************************************************************************
 
   //just for "cheking" recoil effect
