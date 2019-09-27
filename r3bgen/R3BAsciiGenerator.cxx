@@ -107,6 +107,9 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t iMass      = 0.;
 
 
+ // ofstream myfile;
+//  myfile.open ("stupid.txt",std::ios_base::app);
+
   //******* Defining new particles, registered in evt_gen3.dat ****
   Int_t pdgType_29S = 1000160290;
   //***************************************************************
@@ -115,10 +118,20 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t costheta = 2.*gRandom->Uniform(0,1)-1.0;
   Double_t sintheta = std::sqrt((1.0 - costheta)*(1.0 + costheta));
   Double_t phi  = 2*TMath::Pi()*gRandom->Uniform(0,1);
-  //cout << "cos theta = " << costheta << endl;
+  //cout << "!! cos theta = " << costheta << endl;
   //cout << "theta = " << TMath::ASin(sintheta) << endl;
   //cout << "sintheta = " << sintheta << endl;
   //cout << "phi = " << phi << endl;
+  //***************************************************************
+
+  //******* Variables for target smearing *************************
+  Double_t beam_spot = 0.1;    // radius of beam spot on the target
+  Double_t target_thick = 2.6; // thickness of the target
+  //smearing of the vertex within the target 
+  vx = beam_spot*(0.5 - gRandom->Uniform(0,1));
+  vy = beam_spot*(0.5 - gRandom->Uniform(0,1));
+  vz = target_thick*(gRandom->Uniform(0,1) - 0.5);
+  //Double_t target_thick = 0.6;
   //***************************************************************
 
   //******* Defining masses, mother energy, tlife **********
@@ -127,7 +140,16 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t QDECAY2 = 0.002;
   Double_t AMASS1 = 0.938272297; //mass of proton
   iMass = AMS29 + AMASS1 + QDECAY2; //mass of 30 chlorine
-  Double_t Ekin_30Cl = 0.618*30; //kin energy of chlorine
+
+  // this value here should become randomized in a range from 0.519*30 to 0.618*30
+  // and vertex randomisation should depend on it! 
+  Double_t Ekin_30Cl; //, Ekin_30Cl_in, Ekin_30Cl_out;
+  Double_t coeff_a, coeff_b; coeff_a = -1.14231; coeff_b = 17.055; // a and b are obtained using energy_vs_thickness.C 
+ // Ekin_30Cl_in = 0.618*30.;
+ // Ekin_30Cl_out = 0.519*30;
+ // Ekin_30Cl = (Ekin_30Cl_in + Ekin_30Cl_out)/2.-(Ekin_30Cl_in - Ekin_30Cl_out)*(gRandom->Uniform(0,1) - 0.5);  //kin energy of chlorine
+  Ekin_30Cl = coeff_a*vz + coeff_b;
+  
   //Double_t Ekin_30Cl = 0.002;
   Double_t tlife = 6.58e-19; //tlife of 30Cl in sec
   Double_t iMass1 = iMass + 3.291086E-25/tlife*std::tan(TMath::Pi());
@@ -151,8 +173,8 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   daughtermass[0] = AMS29;
   daughtermass[1] = AMASS1;
   daughtermomentum = Pcm(iMass1,daughtermass[0],daughtermass[1]); 
-  cout << "Etot_30Cl = " << Etot_30Cl << endl;
-  printf("daughtermomentum = %f\n", daughtermomentum);
+  //cout << "Etot_30Cl = " << Etot_30Cl << endl;
+  //printf("daughtermomentum = %f\n", daughtermomentum);
   //energies in c.m.s of decay products
   Etot_29S= sqrt(daughtermass[0]*daughtermass[0] + daughtermomentum*daughtermomentum);
   Etot_p= sqrt(daughtermass[1]*daughtermass[1] + daughtermomentum*daughtermomentum); 
@@ -165,7 +187,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   cout << "Etot_p = " << Etot_p <<endl;
   cout << "Etot_29S_fort = " << Etot_29S_fort <<endl;
   */
-  cout << "Etot_29S in cm before Lorentz = " << Etot_29S <<endl;
+  //cout << "Etot_29S in cm before Lorentz = " << Etot_29S <<endl;
   
   //at this point we have decay products in the rest frame of mother
   //****************************************************************
@@ -195,14 +217,15 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
     Plab_29S[i] = Pcm_daughter[i];
     Plab_p[i] = (-1)*Pcm_daughter[i];
   }
-  cout << "Pcm_daughter[2] " << Pcm_daughter[2] << endl;
+  //cout << "Pcm_daughter[2] " << Pcm_daughter[2] << endl;
   
   //now Lorentz boost on z
   Plab_29S[2] = Pcm_daughter[2] + gamma*beta*((gamma*beta*Pcm_daughter[2])/(gamma+1) - Etot_29S);
   Plab_p[2] = (-1)*Pcm_daughter[2] + gamma*beta*((gamma*beta*(-1)*Pcm_daughter[2])/(gamma+1) - Etot_p);
+  //cout << Plab_29S[2] << endl;
 
   Elab_29S = gamma*(Etot_29S - beta*Pcm_daughter[2]);
-  cout << "Elab_29S in lab after Lorentz = " << Elab_29S <<endl;
+  //cout << "Elab_29S in lab after Lorentz = " << Elab_29S <<endl;
 
 
   //********************* check qvalue**********************************************
@@ -215,7 +238,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
     //some stupid calculations 
    //    pcm =  Phi + g*b*((g*b*Phi)/(g+1) + e_hi_lab); //here I calculate pcm from plab
   //qvalue_out = 4*iMass1*iMass1*daughtermomentum*daughtermomentum/((iMass1 + AMASS1 - AMS29)*(iMass1 - AMASS1 + AMS29)*(iMass1 + AMASS1 + AMS29));
-  printf("Qvalue from pcm from plab and masses = %f\n",qvalue_out);
+  //printf("Qvalue from pcm from plab and masses = %f\n",qvalue_out);
  
 
  // printf("T kin of S before detectors %f\n", sqrt(P_hi*P_hi + AMS29*AMS29) - AMS29);
@@ -305,25 +328,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
     }
     //else pdgType = iPid;  // "normal" particle
     else pdgType = iA;  // "normal" particle
-
-      // Give track to PrimaryGenerator
-      //cout << "PDG : " << pdgType << endl;
-
-    if (fPointVtxIsSet){ 
-      vx = fX;
-      vy = fY;
-      vz = fZ;
-      if (fBoxVtxIsSet){
-        vx = gRandom->Gaus(fX,fDX);
-        vy = gRandom->Gaus(fY,fDY);
-        vz = gRandom->Gaus(fZ,fDZ); 
-      }         	
-    }
-    //cout << "pdgType = " << pdgType << endl;
-   // primGen->AddTrack(pdgType, px, py, pz, vx, vy, vz);
-    //primGen->AddTrack(1000170300, px, py, pz, vx, vy, vz);
-
-    //Put here the right values for the momentum of the two decay particles/ions: proton and 29S
+  //  myfile << Plab_p[1] << " " << "\n";
     primGen->AddTrack(2212, Plab_p[0], Plab_p[1], Plab_p[2], vx, vy, vz);
     primGen->AddTrack(pdgType_29S, Plab_29S[0], Plab_29S[1], Plab_29S[2], vx, vy, vz);
 
