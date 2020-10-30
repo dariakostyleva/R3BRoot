@@ -126,7 +126,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
 
   //******* Variables for target smearing *************************
   Double_t beam_spot = 0.1;    // radius of beam spot on the target
-  Double_t target_thick = 2.6; // thickness of the target
+  Double_t target_thick = 2.6; // thickness of the target, cm
   //smearing of the vertex within the target 
   vx = beam_spot*(0.5 - gRandom->Uniform(0,1));
   vy = beam_spot*(0.5 - gRandom->Uniform(0,1));
@@ -140,6 +140,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t QDECAY2 = 0.002;
   Double_t AMASS1 = 0.938272297; //mass of proton
   iMass = AMS29 + AMASS1 + QDECAY2; //mass of 30 chlorine
+  //cout << "M = " << iMass << endl;
 
   // this value here should become randomized in a range from 0.519*30 to 0.618*30
   // and vertex randomisation should depend on it! 
@@ -149,6 +150,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
  // Ekin_30Cl_out = 0.519*30;
  // Ekin_30Cl = (Ekin_30Cl_in + Ekin_30Cl_out)/2.-(Ekin_30Cl_in - Ekin_30Cl_out)*(gRandom->Uniform(0,1) - 0.5);  //kin energy of chlorine
   Ekin_30Cl = coeff_a*vz + coeff_b;
+  printf("Ekin_30Cl = %f\n",Ekin_30Cl);
   
   //Double_t Ekin_30Cl = 0.002;
   Double_t tlife = 6.58e-19; //tlife of 30Cl in sec
@@ -156,12 +158,19 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   Double_t Pmom_30Cl = sqrt(Ekin_30Cl*(Ekin_30Cl+2.*iMass1));
   Double_t qvalue_out = 0.; // to check the reproduction of the q-value
   Double_t P_hi = 0.0, Pp = 0.0;         // to check the reproduction of the q-value
+  //cout << "P = " << Pmom_30Cl << endl;
 
   //***************************************************************
   //Double_t P_30Cl[3];
   //P_30Cl[1] = Pmom_30Cl*sintheta*std::cos(phi);
   //P_30Cl[2] = Pmom_30Cl*sintheta*std::sin(phi);
   //P_30Cl[3] = Pmom_30Cl*costheta;
+
+  //calculating sin theta max from formula 2.16 in thesis
+  Double_t theta_max = 0.; //maximum possible angle between p and Cl
+
+  theta_max = TMath::ASin(1/(2*AMASS1)*sqrt( (iMass + AMASS1 -AMS29)*(iMass - AMASS1 + AMS29)*(iMass + AMASS1 + AMS29)/(Ekin_30Cl*(Ekin_30Cl+2*iMass)) ) * sqrt(QDECAY2) );
+  printf("theta_max = %f rad\n", theta_max);
 
   //******* Two-body decay ****************************************
   Double_t Etot_29S, Etot_29S_fort;
@@ -174,7 +183,7 @@ Bool_t R3BAsciiGenerator::ReadEvent(FairPrimaryGenerator* primGen) {
   daughtermass[1] = AMASS1;
   daughtermomentum = Pcm(iMass1,daughtermass[0],daughtermass[1]); 
   //cout << "Etot_30Cl = " << Etot_30Cl << endl;
-  //printf("daughtermomentum = %f\n", daughtermomentum);
+  printf("Pcm = %f\n", daughtermomentum);
   //energies in c.m.s of decay products
   Etot_29S= sqrt(daughtermass[0]*daughtermass[0] + daughtermomentum*daughtermomentum);
   Etot_p= sqrt(daughtermass[1]*daughtermass[1] + daughtermomentum*daughtermomentum); 
